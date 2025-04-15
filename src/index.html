@@ -6,41 +6,38 @@
     <title>Map Viewer</title>
     <link rel="stylesheet" href="styles/style.css">
     <style>
-        #svgCanvas {
-            width: 95vw;
-            height: 85vh;
-            border: 1px solid black;
-            display: block;
-            margin: 0 auto;
-            overflow: scroll; /* Allow scrolling */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden; /* Prevent scrolling */
         }
         #app-container {
-            overflow: auto; /* Ensure the container allows scrolling */
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            overflow: hidden; /* Prevent scrolling */
         }
-        #bottom-bar {
+        #svgCanvas {
+            flex-grow: 1;
+            width: 100%;
+            height: auto;
+            border: 1px solid black;
+        }
+        #filter-bar, #toggle-bar, #bottom-bar {
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 10px;
+            flex-wrap: wrap; /* Allow wrapping for smaller screens */
+            padding: 5px;
             background-color: #f0f0f0;
             border-top: 1px solid #ccc;
         }
-        #bottom-bar button, #bottom-bar input[type="file"], #bottom-bar label {
-            margin: 0 10px;
-            padding: 5px 10px;
+        #filter-bar label, #toggle-bar label, #bottom-bar button, #bottom-bar input[type="file"], #bottom-bar label {
+            margin: 5px;
             font-size: 14px;
-            cursor: pointer;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        #filter-bar {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 10px 0;
-        }
-        #filter-bar label, #filter-bar select {
-            margin: 0 10px;
         }
         #tooltip {
             display: none;
@@ -52,14 +49,14 @@
             pointer-events: none;
             z-index: 1000;
         }
-        #toggle-bar {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 10px 0;
-        }
-        #toggle-bar label {
-            margin: 0 10px;
+        #zoom-display {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 5px;
+            border: 1px solid black;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -67,9 +64,7 @@
     <div id="app-container">
         <svg id="svgCanvas" viewBox="0 0 1000 1000"></svg>
         <div id="tooltip"></div>
-        <div id="zoom-display" style="position: absolute; bottom: 10px; right: 10px; background: rgba(255, 255, 255, 0.8); padding: 5px; border: 1px solid black; font-size: 14px;">
-            Zoom: 100%
-        </div>
+        <div id="zoom-display">Zoom: 100%</div>
         <div id="filter-bar">
             <label><input type="checkbox" id="filter-aoz" checked> AOZ</label>
             <label><input type="checkbox" id="filter-road" checked> Road</label>
@@ -89,22 +84,10 @@
             <label><input type="checkbox" id="filter-speed-limit"> Show Speed Limits</label>
         </div>
         <div id="toggle-bar">
-            <label>
-                <input type="checkbox" id="highlight-narrow-roads-toggle">
-                Highlight Narrow Roads
-            </label>
-            <label>
-                <input type="checkbox" id="highlight-old-references-toggle">
-                Highlight Old References
-            </label>
-            <label>
-                <input type="checkbox" id="highlight-ps-focus-toggle">
-                Highlight PS Focus (Elements with Speeds Under 30kph)
-            </label>
-            <label>
-                <input type="checkbox" id="highlight-recent-utc-toggle">
-                Highlight Recent UTC (Last 24 Hours)
-            </label>
+            <label><input type="checkbox" id="highlight-narrow-roads-toggle"> Highlight Narrow Roads</label>
+            <label><input type="checkbox" id="highlight-old-references-toggle"> Highlight Old References</label>
+            <label><input type="checkbox" id="highlight-ps-focus-toggle"> Highlight PS Focus</label>
+            <label><input type="checkbox" id="highlight-recent-utc-toggle"> Highlight Recent UTC</label>
         </div>
         <div id="bottom-bar">
             <input type="file" id="file-upload-1" />
