@@ -48,7 +48,7 @@ export function breakdownJson(jsonData) {
     return shapes;
 }
 
-export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimits) {
+export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimits, highlightOldReferences, highlightPSFocus) {
     svgCanvas.innerHTML = ""; // Clear existing SVG content
     console.log("Cleared SVG canvas."); // Log canvas clearing
 
@@ -62,6 +62,8 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
         Dump: "rgba(200, 200, 200, 0.5)"  // Light grey fill for dump areas
     };
 
+    const now = new Date();
+
     Object.keys(shapes).forEach(type => {
         if (!filters[type]) {
             console.log(`Filter for ${type} is off. Skipping.`); // Log skipped types
@@ -72,6 +74,7 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
         shapes[type].forEach(shape => {
             const name = shape.Name || shape.MapElement?.Name || shape.Polygon?.Name || "Unnamed";
             const speedLimit = shape.SpeedLimit || shape.MapElement?.SpeedLimit || shape.Polygon?.SpeedLimit || null;
+            const utcTime = shape.UtcTime || shape.MapElement?.UtcTime || shape.Polygon?.UtcTime || null;
 
             if (nameFilter !== "None" && !name.toLowerCase().includes(nameFilter.toLowerCase())) {
                 console.log(`Shape '${name}' does not match name filter '${nameFilter}'. Skipping.`); // Log name filter mismatch
@@ -94,8 +97,23 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
                 return;
             }
 
+            // Determine fill color based on toggles
+            let fillColor = colors[type] || "none";
+            if (type === "Reference") {
+                const shapeDate = utcTime ? new Date(utcTime) : null;
+                const timeDifference = shapeDate ? now - shapeDate : null;
+
+                if (highlightOldReferences && timeDifference && timeDifference > 24 * 60 * 60 * 1000) {
+                    fillColor = "rgba(255, 0, 0, 0.5)"; // Red transparent fill for old references
+                }
+
+                if (highlightPSFocus && ((timeDifference && timeDifference > 24 * 60 * 60 * 1000) || (speedLimit && speedLimit * 3.6 < 20))) {
+                    fillColor = "rgba(255, 0, 0, 0.5)"; // Red transparent fill for PS focus
+                }
+            }
+
             polygon.setAttribute("points", pointsAttribute);
-            polygon.setAttribute("fill", colors[type] || "none");
+            polygon.setAttribute("fill", fillColor);
             polygon.setAttribute("stroke", "black");
             polygon.setAttribute("stroke-width", "1");
 
@@ -109,6 +127,7 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
                     <strong>${type}</strong><br>
                     Name: ${name}<br>
                     ${speedLimit ? `Speed Limit: ${(speedLimit * 3.6).toFixed(1)} km/h<br>` : ""}
+                    ${type === "Reference" && utcTime ? `Creation Date: ${new Date(utcTime).toUTCString()}<br>` : ""}
                 `;
                 tooltip.style.display = "block";
             });
