@@ -95,8 +95,8 @@ export function highlightPSFocus(svgCanvas, shapes, highlightPSFocus) {
                 // Add event listeners for hover, click, and touch
                 if (isTouchDevice) {
                     polygon.addEventListener("touchstart", (event) => {
+                        event.preventDefault(); // Prevent default touch behavior
                         showTooltip(event.touches[0]);
-                        event.stopPropagation(); // Prevent hiding the tooltip immediately
                     });
 
                     // Hide tooltip when touching outside the shape
