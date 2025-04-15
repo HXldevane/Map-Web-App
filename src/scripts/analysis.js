@@ -56,12 +56,13 @@ export function highlightPSFocus(svgCanvas, shapes, highlightPSFocus) {
     if (!highlightPSFocus) return;
 
     const typesToHighlight = ["Reference", "Road", "Load", "Dump"];
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
     typesToHighlight.forEach(type => {
         shapes[type]?.forEach(shape => {
             const speedLimit = shape.SpeedLimit || shape.MapElement?.SpeedLimit || null;
 
-            if (speedLimit && speedLimit * 3.6 < 31) { // Highlight elements with speeds under 20 kph
+            if (speedLimit && speedLimit * 3.6 < 31) { // Highlight elements with speeds under 31 kph
                 const points = shape.Points || shape.MapElement?.Points || [];
                 const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
                 polygon.setAttribute("points", points.map(p => `${p.X},${p.Y}`).join(" "));
@@ -69,11 +70,11 @@ export function highlightPSFocus(svgCanvas, shapes, highlightPSFocus) {
                 polygon.setAttribute("stroke", "black");
                 polygon.setAttribute("stroke-width", "1");
 
-                // Add hover functionality for tooltip
                 const name = shape.Name || shape.MapElement?.Name || "Unnamed";
                 const speedLimitKph = Math.round(speedLimit * 3.6); // Convert m/s to kph
 
-                polygon.addEventListener("mouseenter", () => {
+                // Add hover or click functionality for tooltip
+                const showTooltip = (event) => {
                     const tooltip = document.getElementById("tooltip");
                     tooltip.innerHTML = `
                         <strong>${type}</strong><br>
@@ -81,12 +82,21 @@ export function highlightPSFocus(svgCanvas, shapes, highlightPSFocus) {
                         Speed Limit: ${speedLimitKph} kph<br>
                     `;
                     tooltip.style.display = "block";
-                });
+                    tooltip.style.left = `${event.pageX + 10}px`;
+                    tooltip.style.top = `${event.pageY + 10}px`;
+                };
 
-                polygon.addEventListener("mouseleave", () => {
+                const hideTooltip = () => {
                     const tooltip = document.getElementById("tooltip");
                     tooltip.style.display = "none";
-                });
+                };
+
+                if (isTouchDevice) {
+                    polygon.addEventListener("click", showTooltip);
+                } else {
+                    polygon.addEventListener("mouseenter", showTooltip);
+                    polygon.addEventListener("mouseleave", hideTooltip);
+                }
 
                 svgCanvas.appendChild(polygon);
             }
