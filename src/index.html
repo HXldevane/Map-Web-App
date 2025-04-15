@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Viewer</title>
+    <link rel="stylesheet" href="styles/style.css">
+    <style>
+        #svgCanvas {
+            width: 95vw;
+            height: 85vh;
+            border: 1px solid black;
+            display: block;
+            margin: 0 auto;
+        }
+        #bottom-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-top: 1px solid #ccc;
+        }
+        #bottom-bar button, #bottom-bar input[type="file"], #bottom-bar label {
+            margin: 0 10px;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        #filter-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0;
+        }
+        #filter-bar label, #filter-bar select {
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <svg id="svgCanvas" viewBox="0 0 1000 1000"></svg>
+        <div id="filter-bar">
+            <label><input type="checkbox" id="filter-aoz" checked> AOZ</label>
+            <label><input type="checkbox" id="filter-road" checked> Road</label>
+            <label><input type="checkbox" id="filter-reference" checked> Reference</label>
+            <label><input type="checkbox" id="filter-obstacle" checked> Obstacle</label>
+            <label><input type="checkbox" id="filter-station" checked> Station</label>
+            <label><input type="checkbox" id="filter-load" checked> Load Shapes</label>
+            <label><input type="checkbox" id="filter-dump" checked> Dump Shapes</label>
+            <label for="name-filter">Name Filter:</label>
+            <select id="name-filter">
+                <option value="None">None</option>
+                <option value="Zulu">Zulu</option>
+                <option value="Bravo">Bravo</option>
+                <option value="Delta">Delta</option>
+            </select>
+            <label><input type="checkbox" id="filter-speed-limit"> Show Speed Limits</label>
+        </div>
+        <div id="bottom-bar">
+            <input type="file" id="file-upload-1" />
+            <button id="clear-file-btn-1">Clear File</button>
+            <input type="file" id="file-upload-2" />
+            <button id="clear-file-btn-2">Clear File</button>
+            <label><input type="checkbox" id="filter-load" checked> Load Shapes</label>
+            <label><input type="checkbox" id="filter-dump" checked> Dump Shapes</label>
+            <button id="rotate-left-btn">Rotate Left</button>
+            <button id="rotate-right-btn">Rotate Right</button>
+            <button id="highlight-narrow-roads-btn">Highlight Narrow Roads</button>
+        </div>
+    </div>
+    <script type="module" src="scripts/main.js"></script>
+</body>
+</html>
