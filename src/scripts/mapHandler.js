@@ -48,7 +48,7 @@ export function breakdownJson(jsonData) {
     return shapes;
 }
 
-export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimits, highlightOldReferences, highlightPSFocus) {
+export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimits) {
     svgCanvas.innerHTML = ""; // Clear existing SVG content
     console.log("Cleared SVG canvas."); // Log canvas clearing
 
@@ -74,7 +74,6 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
         shapes[type].forEach(shape => {
             const name = shape.Name || shape.MapElement?.Name || shape.Polygon?.Name || "Unnamed";
             const speedLimit = shape.SpeedLimit || shape.MapElement?.SpeedLimit || shape.Polygon?.SpeedLimit || null;
-            const utcTime = shape.UtcTime || shape.MapElement?.UtcTime || shape.Polygon?.UtcTime || null;
 
             if (nameFilter !== "None" && !name.toLowerCase().includes(nameFilter.toLowerCase())) {
                 console.log(`Shape '${name}' does not match name filter '${nameFilter}'. Skipping.`); // Log name filter mismatch
@@ -99,18 +98,6 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
 
             // Determine fill color based on toggles
             let fillColor = colors[type] || "none";
-            if (type === "Reference") {
-                const shapeDate = utcTime ? new Date(utcTime) : null;
-                const timeDifference = shapeDate ? now - shapeDate : null;
-
-                if (highlightOldReferences && timeDifference && timeDifference > 24 * 60 * 60 * 1000) {
-                    fillColor = "rgba(255, 0, 0, 0.5)"; // Red transparent fill for old references
-                }
-
-                if (highlightPSFocus && ((timeDifference && timeDifference > 24 * 60 * 60 * 1000) || (speedLimit && speedLimit * 3.6 < 20))) {
-                    fillColor = "rgba(255, 0, 0, 0.5)"; // Red transparent fill for PS focus
-                }
-            }
 
             polygon.setAttribute("points", pointsAttribute);
             polygon.setAttribute("fill", fillColor);
@@ -127,7 +114,6 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
                     <strong>${type}</strong><br>
                     Name: ${name}<br>
                     ${speedLimit ? `Speed Limit: ${(speedLimit * 3.6).toFixed(1)} km/h<br>` : ""}
-                    ${type === "Reference" && utcTime ? `Creation Date: ${new Date(utcTime).toUTCString()}<br>` : ""}
                 `;
                 tooltip.style.display = "block";
             });
@@ -153,57 +139,5 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
                 svgCanvas.appendChild(text);
             }
         });
-    });
-}
-
-function calculateShortestWidth(points, secondEdgeStartIndex) {
-    let shortestWidth = Infinity;
-    for (let i = 0; i < secondEdgeStartIndex; i++) {
-        const leftPoint = points[i];
-        const rightPoint = points[secondEdgeStartIndex + i];
-        if (!leftPoint || !rightPoint) continue;
-
-        const dx = rightPoint.X - leftPoint.X;
-        const dy = rightPoint.Y - leftPoint.Y;
-        const width = Math.sqrt(dx * dx + dy * dy);
-
-        if (width < shortestWidth) {
-            shortestWidth = width;
-        }
-    }
-    return shortestWidth;
-}
-
-export function highlightNarrowRoads(svgCanvas, shapes) {
-    const narrowThreshold = 10;
-
-    shapes.Road.forEach(shape => {
-        const points = shape.MapElement?.Points || [];
-        const secondEdgeStartIndex = shape.MapElement?.SecondEdgeStartsAtIndex;
-
-        if (points.length > 1 && secondEdgeStartIndex !== undefined) {
-            for (let i = 0; i < secondEdgeStartIndex - 1; i++) {
-                const leftPoint = points[i];
-                const rightPoint = points[secondEdgeStartIndex + i];
-
-                if (!leftPoint || !rightPoint) continue;
-
-                const dx = rightPoint.X - leftPoint.X;
-                const dy = rightPoint.Y - leftPoint.Y;
-                const width = Math.sqrt(dx * dx + dy * dy);
-
-                if (width < narrowThreshold) {
-                    const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-                    polygon.setAttribute(
-                        "points",
-                        points.map(p => `${p.X},${p.Y}`).join(" ")
-                    );
-                    polygon.setAttribute("fill", "red");
-                    polygon.setAttribute("opacity", "0.5");
-                    svgCanvas.appendChild(polygon);
-                    break;
-                }
-            }
-        }
     });
 }

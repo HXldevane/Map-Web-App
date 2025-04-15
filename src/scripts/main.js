@@ -1,5 +1,6 @@
 import { handleZoom, handleDragStart, handleDragMove, handleDragEnd, initializeBoundingBox, rotateMap } from './user.js';
-import { breakdownJson, plotShapes, highlightNarrowRoads } from './mapHandler.js';
+import { breakdownJson, plotShapes } from './mapHandler.js';
+import { highlightNarrowRoads, highlightOldReferences, highlightPSFocus } from './analysis.js';
 
 let isDragging = false; // Declare isDragging to track drag state
 let dragStart = { x: 0, y: 0 }; // Declare dragStart to track drag start position
@@ -27,8 +28,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (narrowRoadsToggle) {
         narrowRoadsToggle.addEventListener('change', () => {
             if (currentShapes) {
-                const highlightNarrowRoads = narrowRoadsToggle.checked;
-                if (highlightNarrowRoads) {
+                const highlightNarrowRoadsChecked = narrowRoadsToggle.checked;
+                if (highlightNarrowRoadsChecked) {
                     highlightNarrowRoads(svgCanvas, currentShapes);
                     console.log("Highlighted narrow roads.");
                 } else {
@@ -125,8 +126,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (oldReferencesToggle) {
         oldReferencesToggle.addEventListener('change', () => {
             if (currentShapes && svgCanvas) {
-                const highlightOldReferences = oldReferencesToggle.checked;
-                plotShapes(svgCanvas, currentShapes, getFilters(), getNameFilter(), getShowSpeedLimits(), highlightOldReferences, false);
+                const highlightOldReferencesChecked = oldReferencesToggle.checked;
+                highlightOldReferences(svgCanvas, currentShapes, highlightOldReferencesChecked, new Date());
             }
         });
     }
@@ -134,8 +135,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (psFocusToggle) {
         psFocusToggle.addEventListener('change', () => {
             if (currentShapes && svgCanvas) {
-                const highlightPSFocus = psFocusToggle.checked;
-                plotShapes(svgCanvas, currentShapes, getFilters(), getNameFilter(), getShowSpeedLimits(), false, highlightPSFocus);
+                const highlightPSFocusChecked = psFocusToggle.checked;
+                highlightPSFocus(svgCanvas, currentShapes, highlightPSFocusChecked);
             }
         });
     }
