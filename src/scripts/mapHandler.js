@@ -1,3 +1,5 @@
+const GLOBAL_SPEED_LIMIT = 50; // Default global speed limit in m/s
+
 export function breakdownJson(jsonData) {
     const shapes = {
         AOZ: [],
@@ -6,7 +8,8 @@ export function breakdownJson(jsonData) {
         Obstacle: [],
         Station: [],
         Load: [],
-        Dump: []
+        Dump: [],
+        Drivable: [] // Add Drivable category
     };
 
     if (!jsonData.MapShapes || !Array.isArray(jsonData.MapShapes)) {
@@ -39,6 +42,8 @@ export function breakdownJson(jsonData) {
             shapes.Load.push(shape);
         } else if (type.includes("EdgeDumpShapeDto")) {
             shapes.Dump.push(shape);
+        } else if (type.includes("DrivableShapeDto_V1")) {
+            shapes.Drivable.push(shape); // Add Drivable shapes
         } else {
             console.warn(`Unknown shape type '${type}' at index ${index}. Skipping.`, shape); // Log unknown types
         }
@@ -59,10 +64,9 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
         Obstacle: "none",
         Station: "none",
         Load: "rgba(200, 200, 200, 0.5)", // Light grey fill for load areas
-        Dump: "rgba(200, 200, 200, 0.5)"  // Light grey fill for dump areas
+        Dump: "rgba(200, 200, 200, 0.5)", // Light grey fill for dump areas
+        Drivable: "rgba(0, 255, 0, 0.5)" // Green transparent fill for drivable shapes
     };
-
-    const now = new Date();
 
     Object.keys(shapes).forEach(type => {
         if (!filters[type]) {
@@ -73,12 +77,16 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
         console.log(`Plotting shapes of type: ${type}`); // Log type being plotted
         shapes[type].forEach(shape => {
             const name = shape.Name || shape.MapElement?.Name || shape.Polygon?.Name || "Unnamed";
-            const speedLimit = shape.SpeedLimit || shape.MapElement?.SpeedLimit || shape.Polygon?.SpeedLimit || null;
+            const speedLimitMps = shape.SpeedLimit || shape.MapElement?.SpeedLimit || GLOBAL_SPEED_LIMIT; // Use SpeedLimit or fallback
+            const speedLimitKph = Math.round(speedLimitMps * 3.6); // Convert m/s to kph and round to whole number
 
-            if (nameFilter !== "None" && !name.toLowerCase().includes(nameFilter.toLowerCase())) {
-                console.log(`Shape '${name}' does not match name filter '${nameFilter}'. Skipping.`); // Log name filter mismatch
+            // Validate SpeedLimit
+            if (typeof speedLimitMps !== "number") {
+                console.warn(`Invalid SpeedLimit for shape '${name}':`, speedLimitMps);
                 return;
             }
+
+            console.log(`Shape '${name}' SpeedLimit: ${speedLimitMps} m/s (${speedLimitKph} kph)`); // Log speed in both units
 
             // Extract points from the correct location
             const points = shape.Points || shape.MapElement?.Points || shape.Polygon?.Points || [];
@@ -113,7 +121,7 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
                 tooltip.innerHTML = `
                     <strong>${type}</strong><br>
                     Name: ${name}<br>
-                    ${speedLimit ? `Speed Limit: ${(speedLimit * 3.6).toFixed(1)} km/h<br>` : ""}
+                    ${speedLimitKph ? `Speed Limit: ${speedLimitKph} kph<br>` : ""}
                 `;
                 tooltip.style.display = "block";
             });
@@ -124,7 +132,7 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
             });
 
             // Display speed limit for specific shape types
-            if (showSpeedLimits && ["Road", "Dump", "Load", "Reference"].includes(type) && speedLimit) {
+            if (showSpeedLimits && ["Road", "Dump", "Load", "Reference"].includes(type)) {
                 const centerX = points.reduce((sum, p) => sum + p.X, 0) / points.length;
                 const centerY = points.reduce((sum, p) => sum + p.Y, 0) / points.length;
 
@@ -135,7 +143,7 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
                 text.setAttribute("font-size", "12");
                 text.setAttribute("text-anchor", "middle");
                 text.setAttribute("dominant-baseline", "middle");
-                text.textContent = `${(speedLimit * 3.6).toFixed(1)} km/h`; // Convert m/s to km/h
+                text.textContent = `${speedLimitKph} kph`; // Display speed in kph as a whole number
                 svgCanvas.appendChild(text);
             }
         });

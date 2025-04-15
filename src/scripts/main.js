@@ -157,6 +157,12 @@ document.addEventListener("DOMContentLoaded", () => {
         checkbox.addEventListener('change', updatePlot);
     });
 
+    // Add event listener for Drivable toggle
+    const drivableToggle = document.getElementById('filter-drivable');
+    if (drivableToggle) {
+        drivableToggle.addEventListener('change', updatePlot);
+    }
+
     if (svgCanvas) {
         svgCanvas.addEventListener('mousedown', determineInteraction);
         svgCanvas.addEventListener('wheel', determineInteraction);
@@ -202,7 +208,8 @@ document.addEventListener("DOMContentLoaded", () => {
             Obstacle: document.getElementById('filter-obstacle')?.checked || false,
             Station: document.getElementById('filter-station')?.checked || false,
             Load: document.getElementById('filter-load')?.checked || false,
-            Dump: document.getElementById('filter-dump')?.checked || false
+            Dump: document.getElementById('filter-dump')?.checked || false,
+            Drivable: document.getElementById('filter-drivable')?.checked || false // Add Drivable filter
         };
     }
 

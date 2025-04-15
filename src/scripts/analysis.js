@@ -61,7 +61,7 @@ export function highlightPSFocus(svgCanvas, shapes, highlightPSFocus) {
         shapes[type]?.forEach(shape => {
             const speedLimit = shape.SpeedLimit || shape.MapElement?.SpeedLimit || null;
 
-            if (speedLimit && speedLimit * 3.6 < 20) { // Highlight elements with speeds under 20 kph
+            if (speedLimit && speedLimit * 3.6 < 31) { // Highlight elements with speeds under 20 kph
                 const points = shape.Points || shape.MapElement?.Points || [];
                 const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
                 polygon.setAttribute("points", points.map(p => `${p.X},${p.Y}`).join(" "));
