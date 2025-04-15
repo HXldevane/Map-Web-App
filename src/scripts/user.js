@@ -53,6 +53,13 @@ export function handleZoom(event) {
     constrainViewBox();
 
     svgCanvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
+
+    // Update zoom percentage display
+    const zoomPercentage = Math.round((1000 / viewBox.width) * 100); // Assuming 1000 is the base width
+    const zoomDisplay = document.getElementById('zoom-display');
+    if (zoomDisplay) {
+        zoomDisplay.textContent = `Zoom: ${zoomPercentage}%`;
+    }
 }
 
 export function handleDragStart(event) {
