@@ -51,13 +51,11 @@ export function handleZoom(event) {
     viewBox.x += zoomAmount * (zoomCenterX - viewBox.x) / viewBox.width;
     viewBox.y += zoomAmount * (zoomCenterY - viewBox.y) / viewBox.height;
 
-    // Ensure the viewBox stays within the bounding box
     constrainViewBox();
-    console.log("contains pinch");
+
     svgCanvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
 
-    // Update zoom percentage display
-    const zoomPercentage = Math.round((1000 / viewBox.width) * 100); // Assuming 1000 is the base width
+    const zoomPercentage = Math.round((1000 / viewBox.width) * 100);
     const zoomDisplay = document.getElementById('zoom-display');
     if (zoomDisplay) {
         zoomDisplay.textContent = `Zoom: ${zoomPercentage}%`;
@@ -70,11 +68,10 @@ export function handleDragStart(event) {
     dragStart.x = touch.clientX;
     dragStart.y = touch.clientY;
 
-    // Temporarily disable rendering during dragging for performance
     const svgCanvas = document.getElementById('svgCanvas');
     if (svgCanvas) {
         svgCanvas.style.pointerEvents = "none";
-        svgCanvas.style.cursor = "grabbing"; // Change cursor to grabbing
+        svgCanvas.style.cursor = "grabbing";
     }
 }
 
@@ -100,11 +97,10 @@ export function handleDragMove(event) {
 export function handleDragEnd() {
     isDragging = false;
 
-    // Re-enable rendering after dragging
     const svgCanvas = document.getElementById('svgCanvas');
     if (svgCanvas) {
         svgCanvas.style.pointerEvents = "auto";
-        svgCanvas.style.cursor = "grab"; // Change cursor back to grab
+        svgCanvas.style.cursor = "grab";
     }
 }
 
@@ -112,6 +108,7 @@ export function handlePinchStart(event) {
     if (event.touches.length === 2) {
         initialPinchDistance = getPinchDistance(event.touches);
         initialViewBox = { ...viewBox };
+        event.preventDefault(); // Prevent default pinch-to-zoom behavior
     }
 }
 
@@ -134,13 +131,13 @@ export function handlePinchMove(event) {
                 svgCanvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
             }
 
-            // Update zoom percentage display
-            const zoomPercentage = Math.round((1000 / viewBox.width) * 100); // Assuming 1000 is the base width
+            const zoomPercentage = Math.round((1000 / viewBox.width) * 100);
             const zoomDisplay = document.getElementById('zoom-display');
             if (zoomDisplay) {
                 zoomDisplay.textContent = `Zoom: ${zoomPercentage}%`;
             }
         }
+        event.preventDefault(); // Prevent default pinch-to-zoom behavior
     }
 }
 
@@ -153,7 +150,7 @@ function getPinchDistance(touches) {
 export function rotateMapPoints(points, direction) {
     const centerX = viewBox.x + viewBox.width / 2;
     const centerY = viewBox.y + viewBox.height / 2;
-    const angle = (direction * 15 * Math.PI) / 180; // Convert degrees to radians
+    const angle = (direction * 15 * Math.PI) / 180;
 
     return points.map(point => {
         const dx = point.X - centerX;
@@ -170,7 +167,7 @@ export function rotateMap(direction) {
     const svgCanvas = document.getElementById('svgCanvas');
     if (!svgCanvas) return;
 
-    rotationAngle += direction * 15; // Update rotation angle
+    rotationAngle += direction * 15;
     const allShapes = Array.from(svgCanvas.querySelectorAll('polygon'));
 
     allShapes.forEach(shape => {
@@ -188,7 +185,6 @@ export function rotateMap(direction) {
     });
 }
 
-// Ensure the viewBox stays within the theoretical bounding box
 function constrainViewBox() {
     const maxX = boundingBox.x + boundingBox.width - viewBox.width;
     const maxY = boundingBox.y + boundingBox.height - viewBox.height;
@@ -197,7 +193,6 @@ function constrainViewBox() {
     viewBox.y = Math.max(boundingBox.y, Math.min(viewBox.y, maxY));
 }
 
-// Add event listeners for touch gestures
 document.addEventListener("DOMContentLoaded", () => {
     const svgCanvas = document.getElementById('svgCanvas');
     if (svgCanvas) {
@@ -222,4 +217,10 @@ document.addEventListener("DOMContentLoaded", () => {
         svgCanvas.addEventListener("touchend", handleDragEnd);
         svgCanvas.addEventListener("touchcancel", handleDragEnd);
     }
+
+    document.addEventListener("touchmove", event => {
+        if (event.touches.length === 2) {
+            event.preventDefault();
+        }
+    }, { passive: false });
 });
