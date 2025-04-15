@@ -53,7 +53,7 @@ export function handleZoom(event) {
 
     // Ensure the viewBox stays within the bounding box
     constrainViewBox();
-
+    console.log("contains pinch");
     svgCanvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
 
     // Update zoom percentage display
