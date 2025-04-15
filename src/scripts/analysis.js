@@ -92,7 +92,17 @@ export function highlightPSFocus(svgCanvas, shapes, highlightPSFocus) {
                 };
 
                 if (isTouchDevice) {
-                    polygon.addEventListener("click", showTooltip);
+                    polygon.addEventListener("click", (event) => {
+                        showTooltip(event);
+                        event.stopPropagation(); // Prevent hiding the tooltip immediately
+                    });
+
+                    // Hide tooltip when clicking outside the shape
+                    document.addEventListener("click", (event) => {
+                        if (!polygon.contains(event.target)) {
+                            hideTooltip();
+                        }
+                    });
                 } else {
                     polygon.addEventListener("mouseenter", showTooltip);
                     polygon.addEventListener("mouseleave", hideTooltip);
