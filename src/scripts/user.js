@@ -198,6 +198,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (svgCanvas) {
         svgCanvas.style.cursor = "grab";
 
+        // Prevent default browser behaviors
+        svgCanvas.addEventListener("wheel", (e) => {
+            e.preventDefault(); // Prevent scroll
+        }, { passive: false });
+
+        svgCanvas.addEventListener("touchmove", (e) => {
+            e.preventDefault(); // Prevent mobile drag/scroll
+        }, { passive: false });
+
+        svgCanvas.addEventListener("mousedown", (e) => {
+            e.preventDefault(); // Prevent unwanted drag behavior
+        });
+
         svgCanvas.addEventListener("touchstart", event => {
             if (event.touches.length === 1) {
                 handleDragStart(event);
