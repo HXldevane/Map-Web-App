@@ -22,8 +22,9 @@
         }
         #svgCanvas {
             flex-grow: 1;
-            width: 100%;
-            height: auto;
+            width: 96vw; /* 2% margin on left and right */
+            height: calc(96vh - 150px); /* 2% margin on top and bottom, adjusted for controls */
+            margin: 2%; /* Center the canvas with a 2% margin */
             border: 1px solid black;
         }
         #filter-bar, #toggle-bar, #bottom-bar {
