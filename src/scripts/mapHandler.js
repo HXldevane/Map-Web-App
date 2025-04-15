@@ -53,7 +53,7 @@ export function breakdownJson(jsonData) {
     return shapes;
 }
 
-export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimits) {
+export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimits, highlightOldReferences, highlightPSFocus, highlightRecentUtc) {
     svgCanvas.innerHTML = ""; // Clear existing SVG content
     console.log("Cleared SVG canvas."); // Log canvas clearing
 
@@ -65,8 +65,10 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
         Station: "none",
         Load: "rgba(200, 200, 200, 0.5)", // Light grey fill for load areas
         Dump: "rgba(200, 200, 200, 0.5)", // Light grey fill for dump areas
-        Drivable: "rgba(0, 255, 0, 0.5)" // Green transparent fill for drivable shapes
+        Drivable: "rgba(92, 91, 91, 0.5)", // Light grey fill for drivable shapes
     };
+
+    const now = new Date();
 
     Object.keys(shapes).forEach(type => {
         if (!filters[type]) {
@@ -107,6 +109,17 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
             // Determine fill color based on toggles
             let fillColor = colors[type] || "none";
 
+            // Highlight shapes with UTC within the last 24 hours
+            if (highlightRecentUtc) {
+                const utcTime = shape.UtcTime || shape.MapElement?.UtcTime || null;
+                const shapeDate = utcTime ? new Date(utcTime) : null;
+                const timeDifference = shapeDate ? now - shapeDate : null;
+
+                if (timeDifference && timeDifference <= 48 * 60 * 60 * 1000) {
+                    fillColor = "rgba(0, 255, 0, 0.5)"; // Green transparent fill for recent UTC
+                }
+            }
+
             polygon.setAttribute("points", pointsAttribute);
             polygon.setAttribute("fill", fillColor);
             polygon.setAttribute("stroke", "black");
@@ -121,7 +134,7 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
                 tooltip.innerHTML = `
                     <strong>${type}</strong><br>
                     Name: ${name}<br>
-                    ${speedLimitKph ? `Speed Limit: ${speedLimitKph} kph<br>` : ""}
+                    ${speedLimitKph > 51 ? `<span style="color: red;">Error</span><br>` : `Speed Limit: ${speedLimitKph} kph<br>`}
                 `;
                 tooltip.style.display = "block";
             });
@@ -132,18 +145,18 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
             });
 
             // Display speed limit for specific shape types
-            if (showSpeedLimits && ["Road", "Dump", "Load", "Reference"].includes(type)) {
+            if (showSpeedLimits && ["Road", "Dump", "Load", "Reference", "Drivable"].includes(type)) {
                 const centerX = points.reduce((sum, p) => sum + p.X, 0) / points.length;
                 const centerY = points.reduce((sum, p) => sum + p.Y, 0) / points.length;
 
                 const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 text.setAttribute("x", centerX);
                 text.setAttribute("y", centerY);
-                text.setAttribute("fill", "black");
+                text.setAttribute("fill", speedLimitKph > 51 ? "red" : "black");
                 text.setAttribute("font-size", "12");
                 text.setAttribute("text-anchor", "middle");
                 text.setAttribute("dominant-baseline", "middle");
-                text.textContent = `${speedLimitKph} kph`; // Display speed in kph as a whole number
+                text.textContent = speedLimitKph > 51 ? "Error" : `${speedLimitKph} kph`; // Display error if speed exceeds 51 kph
                 svgCanvas.appendChild(text);
             }
         });

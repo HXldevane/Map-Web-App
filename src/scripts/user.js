@@ -62,7 +62,10 @@ export function handleDragStart(event) {
 
     // Temporarily disable rendering during dragging for performance
     const svgCanvas = document.getElementById('svgCanvas');
-    if (svgCanvas) svgCanvas.style.pointerEvents = "none";
+    if (svgCanvas) {
+        svgCanvas.style.pointerEvents = "none";
+        svgCanvas.style.cursor = "grabbing"; // Change cursor to grabbing
+    }
 }
 
 export function handleDragMove(event) {
@@ -88,7 +91,10 @@ export function handleDragEnd() {
 
     // Re-enable rendering after dragging
     const svgCanvas = document.getElementById('svgCanvas');
-    if (svgCanvas) svgCanvas.style.pointerEvents = "auto";
+    if (svgCanvas) {
+        svgCanvas.style.pointerEvents = "auto";
+        svgCanvas.style.cursor = "grab"; // Change cursor back to grab
+    }
 }
 
 export function rotateMapPoints(points, direction) {
@@ -137,3 +143,11 @@ function constrainViewBox() {
     viewBox.x = Math.max(boundingBox.x, Math.min(viewBox.x, maxX));
     viewBox.y = Math.max(boundingBox.y, Math.min(viewBox.y, maxY));
 }
+
+// Ensure the cursor is set to "grab" when not dragging
+document.addEventListener("DOMContentLoaded", () => {
+    const svgCanvas = document.getElementById('svgCanvas');
+    if (svgCanvas) {
+        svgCanvas.style.cursor = "grab";
+    }
+});

@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const highlightPSFocusToggle = document.getElementById("highlightPSFocusToggle");
     const nameFilter = document.getElementById('name-filter');
     const svgCanvas = document.getElementById('svgCanvas');
+    const recentUtcToggle = document.getElementById('highlight-recent-utc-toggle');
 
     // Add event listeners only if elements exist
     if (narrowRoadsToggle) {
@@ -149,6 +150,14 @@ document.addEventListener("DOMContentLoaded", () => {
         highlightPSFocusToggle.addEventListener("change", updatePlot);
     }
 
+    if (recentUtcToggle) {
+        recentUtcToggle.addEventListener('change', () => {
+            if (currentShapes && svgCanvas) {
+                updatePlot(); // Re-plot shapes when the toggle changes
+            }
+        });
+    }
+
     if (nameFilter) {
         nameFilter.addEventListener('change', updatePlot);
     }
@@ -160,7 +169,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Add event listener for Drivable toggle
     const drivableToggle = document.getElementById('filter-drivable');
     if (drivableToggle) {
-        drivableToggle.addEventListener('change', updatePlot);
+        drivableToggle.addEventListener('change', () => {
+            if (currentShapes && svgCanvas) {
+                updatePlot(); // Re-plot shapes when the toggle changes
+            }
+        });
     }
 
     if (svgCanvas) {
@@ -189,6 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const highlightOldReferences = oldReferencesToggle?.checked || false;
         const highlightPSFocus = psFocusToggle?.checked || false;
+        const highlightRecentUtc = recentUtcToggle?.checked || false;
 
         if (!svgCanvas) {
             console.error("SVG element with ID 'svgCanvas' not found.");
@@ -196,7 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         console.log("Plotting shapes on canvas...");
-        plotShapes(svgCanvas, currentShapes, filters, nameFilter, showSpeedLimits, highlightOldReferences, highlightPSFocus);
+        plotShapes(svgCanvas, currentShapes, filters, nameFilter, showSpeedLimits, highlightOldReferences, highlightPSFocus, highlightRecentUtc);
         console.log("Shapes plotted successfully.");
     }
 
@@ -209,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
             Station: document.getElementById('filter-station')?.checked || false,
             Load: document.getElementById('filter-load')?.checked || false,
             Dump: document.getElementById('filter-dump')?.checked || false,
-            Drivable: document.getElementById('filter-drivable')?.checked || false // Add Drivable filter
+            Drivable: document.getElementById('filter-drivable')?.checked || false // Ensure Drivable filter is included
         };
     }
 

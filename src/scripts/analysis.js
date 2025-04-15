@@ -68,6 +68,26 @@ export function highlightPSFocus(svgCanvas, shapes, highlightPSFocus) {
                 polygon.setAttribute("fill", "rgba(255, 0, 0, 0.5)");
                 polygon.setAttribute("stroke", "black");
                 polygon.setAttribute("stroke-width", "1");
+
+                // Add hover functionality for tooltip
+                const name = shape.Name || shape.MapElement?.Name || "Unnamed";
+                const speedLimitKph = Math.round(speedLimit * 3.6); // Convert m/s to kph
+
+                polygon.addEventListener("mouseenter", () => {
+                    const tooltip = document.getElementById("tooltip");
+                    tooltip.innerHTML = `
+                        <strong>${type}</strong><br>
+                        Name: ${name}<br>
+                        Speed Limit: ${speedLimitKph} kph<br>
+                    `;
+                    tooltip.style.display = "block";
+                });
+
+                polygon.addEventListener("mouseleave", () => {
+                    const tooltip = document.getElementById("tooltip");
+                    tooltip.style.display = "none";
+                });
+
                 svgCanvas.appendChild(polygon);
             }
         });
