@@ -38,19 +38,30 @@
         #filter-bar label, #filter-bar select {
             margin: 0 10px;
         }
+        #tooltip {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid black;
+            padding: 5px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
     <div id="app-container">
         <svg id="svgCanvas" viewBox="0 0 1000 1000"></svg>
+        <div id="tooltip"></div>
         <div id="filter-bar">
             <label><input type="checkbox" id="filter-aoz" checked> AOZ</label>
             <label><input type="checkbox" id="filter-road" checked> Road</label>
             <label><input type="checkbox" id="filter-reference" checked> Reference</label>
             <label><input type="checkbox" id="filter-obstacle" checked> Obstacle</label>
             <label><input type="checkbox" id="filter-station" checked> Station</label>
-            <label><input type="checkbox" id="filter-load" checked> Load Shapes</label>
-            <label><input type="checkbox" id="filter-dump" checked> Dump Shapes</label>
+            <label><input type="checkbox" id="filter-load" checked> Load</label>
+            <label><input type="checkbox" id="filter-dump" checked> Dump</label>
             <label for="name-filter">Name Filter:</label>
             <select id="name-filter">
                 <option value="None">None</option>
@@ -65,8 +76,6 @@
             <button id="clear-file-btn-1">Clear File</button>
             <input type="file" id="file-upload-2" />
             <button id="clear-file-btn-2">Clear File</button>
-            <label><input type="checkbox" id="filter-load" checked> Load Shapes</label>
-            <label><input type="checkbox" id="filter-dump" checked> Dump Shapes</label>
             <button id="rotate-left-btn">Rotate Left</button>
             <button id="rotate-right-btn">Rotate Right</button>
             <button id="highlight-narrow-roads-btn">Highlight Narrow Roads</button>

@@ -59,6 +59,10 @@ export function handleDragStart(event) {
     isDragging = true;
     dragStart.x = event.clientX;
     dragStart.y = event.clientY;
+
+    // Temporarily disable rendering during dragging for performance
+    const svgCanvas = document.getElementById('svgCanvas');
+    if (svgCanvas) svgCanvas.style.pointerEvents = "none";
 }
 
 export function handleDragMove(event) {
@@ -73,9 +77,6 @@ export function handleDragMove(event) {
     viewBox.x -= dx;
     viewBox.y -= dy;
 
-    // Ensure the viewBox stays within the bounding box
-    constrainViewBox();
-
     svgCanvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
 
     dragStart.x = event.clientX;
@@ -84,6 +85,10 @@ export function handleDragMove(event) {
 
 export function handleDragEnd() {
     isDragging = false;
+
+    // Re-enable rendering after dragging
+    const svgCanvas = document.getElementById('svgCanvas');
+    if (svgCanvas) svgCanvas.style.pointerEvents = "auto";
 }
 
 export function rotateMapPoints(points, direction) {

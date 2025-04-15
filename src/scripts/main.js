@@ -6,20 +6,47 @@ let dragStart = { x: 0, y: 0 }; // Declare dragStart to track drag start positio
 let currentShapes = null;
 
 document.getElementById('file-upload-1').addEventListener('change', event => {
+    console.log("File upload triggered."); // Log file upload event
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+        console.warn("No file selected.");
+        return;
+    }
 
     const reader = new FileReader();
     reader.onload = () => {
         try {
+            console.log("File read successfully."); // Log successful file read
             const jsonData = JSON.parse(reader.result);
+            if (!jsonData || !jsonData.MapShapes || !Array.isArray(jsonData.MapShapes)) {
+                console.error("Invalid JSON structure: 'MapShapes' is missing or not an array.");
+                return;
+            }
+
+            console.log("JSON structure validated."); // Log JSON validation success
             currentShapes = breakdownJson(jsonData);
+            console.log("Shapes breakdown completed:", currentShapes); // Log breakdown result
 
             // Initialize bounding box based on the points in the JSON
-            const allPoints = jsonData.MapShapes.flatMap(shape => shape.Polygon?.Points || shape.MapElement.Points || []);
+            const allPoints = jsonData.MapShapes.flatMap(shape => shape.Points || shape.MapElement?.Points || []);
+            if (allPoints.length === 0) {
+                console.error("No points found in the uploaded JSON.");
+                return;
+            }
+
+            console.log("Points extracted for bounding box initialization."); // Log points extraction
             initializeBoundingBox(allPoints);
+            console.log("Bounding box initialized."); // Log bounding box initialization
+
+            // Ensure the SVG canvas is cleared before plotting new shapes
+            const svgCanvas = document.getElementById('svgCanvas');
+            if (svgCanvas) {
+                svgCanvas.innerHTML = '';
+                console.log("SVG canvas cleared."); // Log canvas clearing
+            }
 
             updatePlot();
+            console.log("Plot updated successfully."); // Log plot update
         } catch (error) {
             console.error("Invalid JSON file:", error);
         }
@@ -49,23 +76,38 @@ document.getElementById('highlight-narrow-roads-btn').addEventListener('click', 
 });
 
 function updatePlot() {
-    if (!currentShapes) return;
+    if (!currentShapes) {
+        console.warn("No shapes available to plot.");
+        return;
+    }
 
     const filters = {
-        AOZ: document.getElementById('filter-aoz').checked,
-        Road: document.getElementById('filter-road').checked,
-        Reference: document.getElementById('filter-reference').checked,
-        Obstacle: document.getElementById('filter-obstacle').checked,
-        Station: document.getElementById('filter-station').checked,
-        Load: document.getElementById('filter-load').checked,
-        Dump: document.getElementById('filter-dump').checked
+        AOZ: document.getElementById('filter-aoz')?.checked || false,
+        Road: document.getElementById('filter-road')?.checked || false,
+        Reference: document.getElementById('filter-reference')?.checked || false,
+        Obstacle: document.getElementById('filter-obstacle')?.checked || false,
+        Station: document.getElementById('filter-station')?.checked || false,
+        Load: document.getElementById('filter-load')?.checked || false,
+        Dump: document.getElementById('filter-dump')?.checked || false
     };
 
-    const nameFilter = document.getElementById('name-filter').value;
-    const showSpeedLimits = document.getElementById('filter-speed-limit').checked;
+    console.log("Filters applied:", filters); // Log applied filters
+
+    const nameFilter = document.getElementById('name-filter')?.value || "None";
+    console.log("Name filter applied:", nameFilter); // Log name filter
+
+    const showSpeedLimits = document.getElementById('filter-speed-limit')?.checked || false;
+    console.log("Show speed limits:", showSpeedLimits); // Log speed limit toggle state
 
     const svgCanvas = document.getElementById('svgCanvas');
+    if (!svgCanvas) {
+        console.error("SVG element with ID 'svgCanvas' not found.");
+        return;
+    }
+
+    console.log("Plotting shapes on canvas..."); // Log before plotting
     plotShapes(svgCanvas, currentShapes, filters, nameFilter, showSpeedLimits);
+    console.log("Shapes plotted successfully."); // Log after plotting
 }
 
 document.querySelectorAll('#filter-bar input[type="checkbox"]').forEach(checkbox => {
@@ -131,3 +173,11 @@ if (svgCanvas) {
 
 document.addEventListener('mousemove', determineInteraction);
 document.addEventListener('mouseup', determineInteraction);
+
+document.addEventListener("mousemove", event => {
+    const tooltip = document.getElementById("tooltip");
+    if (tooltip.style.display === "block") {
+        tooltip.style.left = event.pageX + 10 + "px";
+        tooltip.style.top = event.pageY + 10 + "px";
+    }
+});
