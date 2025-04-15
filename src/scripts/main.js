@@ -1,5 +1,5 @@
 import { handleZoom, handleDragStart, handleDragMove, handleDragEnd, initializeBoundingBox, rotateMap } from './user.js';
-import { breakdownJson, plotShapes } from './mapHandler.js';
+import { breakdownJson, plotShapes, initializeBoundingBoxes } from './mapHandler.js';
 import { highlightNarrowRoads, highlightOldReferences, highlightPSFocus } from './analysis.js';
 
 let isDragging = false; // Declare isDragging to track drag state
@@ -63,6 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                     currentShapes = breakdownJson(jsonData);
+                    initializeBoundingBoxes(currentShapes); // Initialize bounding boxes for name filters
                     const allPoints = jsonData.MapShapes.flatMap(shape => shape.Points || shape.MapElement?.Points || []);
                     if (allPoints.length === 0) {
                         console.error("No points found in the uploaded JSON.");
@@ -159,7 +160,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (nameFilter) {
-        nameFilter.addEventListener('change', updatePlot);
+        nameFilter.addEventListener('change', () => {
+            updatePlot();
+            if (currentShapes) {
+                initializeBoundingBoxes(currentShapes);
+            }
+        });
     }
 
     document.querySelectorAll('#filter-bar input[type="checkbox"]').forEach(checkbox => {

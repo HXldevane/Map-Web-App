@@ -8,6 +8,8 @@ let rotationAngle = 0; // Initial rotation angle
 
 let isDragging = false;
 let dragStart = { x: 0, y: 0 };
+let initialPinchDistance = null;
+let initialViewBox = { ...viewBox };
 
 export function initializeBoundingBox(points) {
     const xValues = points.map(p => p.X);
@@ -51,14 +53,22 @@ export function handleZoom(event) {
 
     // Ensure the viewBox stays within the bounding box
     constrainViewBox();
-
+    console.log("contains pinch");
     svgCanvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
+
+    // Update zoom percentage display
+    const zoomPercentage = Math.round((1000 / viewBox.width) * 100); // Assuming 1000 is the base width
+    const zoomDisplay = document.getElementById('zoom-display');
+    if (zoomDisplay) {
+        zoomDisplay.textContent = `Zoom: ${zoomPercentage}%`;
+    }
 }
 
 export function handleDragStart(event) {
     isDragging = true;
-    dragStart.x = event.clientX;
-    dragStart.y = event.clientY;
+    const touch = event.touches ? event.touches[0] : event;
+    dragStart.x = touch.clientX;
+    dragStart.y = touch.clientY;
 
     // Temporarily disable rendering during dragging for performance
     const svgCanvas = document.getElementById('svgCanvas');
@@ -74,16 +84,17 @@ export function handleDragMove(event) {
     const svgCanvas = document.getElementById('svgCanvas');
     if (!svgCanvas) return;
 
-    const dx = (event.clientX - dragStart.x) * (viewBox.width / svgCanvas.clientWidth);
-    const dy = (event.clientY - dragStart.y) * (viewBox.height / svgCanvas.clientHeight);
+    const touch = event.touches ? event.touches[0] : event;
+    const dx = (touch.clientX - dragStart.x) * (viewBox.width / svgCanvas.clientWidth);
+    const dy = (touch.clientY - dragStart.y) * (viewBox.height / svgCanvas.clientHeight);
 
     viewBox.x -= dx;
     viewBox.y -= dy;
 
     svgCanvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
 
-    dragStart.x = event.clientX;
-    dragStart.y = event.clientY;
+    dragStart.x = touch.clientX;
+    dragStart.y = touch.clientY;
 }
 
 export function handleDragEnd() {
@@ -95,6 +106,48 @@ export function handleDragEnd() {
         svgCanvas.style.pointerEvents = "auto";
         svgCanvas.style.cursor = "grab"; // Change cursor back to grab
     }
+}
+
+export function handlePinchStart(event) {
+    if (event.touches.length === 2) {
+        initialPinchDistance = getPinchDistance(event.touches);
+        initialViewBox = { ...viewBox };
+    }
+}
+
+export function handlePinchMove(event) {
+    if (event.touches.length === 2 && initialPinchDistance) {
+        const currentPinchDistance = getPinchDistance(event.touches);
+        const scale = initialPinchDistance / currentPinchDistance;
+
+        const newWidth = initialViewBox.width * scale;
+        const newHeight = initialViewBox.height * scale;
+
+        if (newWidth >= minZoom && newWidth <= maxZoom) {
+            viewBox.width = newWidth;
+            viewBox.height = newHeight;
+
+            constrainViewBox();
+
+            const svgCanvas = document.getElementById('svgCanvas');
+            if (svgCanvas) {
+                svgCanvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
+            }
+
+            // Update zoom percentage display
+            const zoomPercentage = Math.round((1000 / viewBox.width) * 100); // Assuming 1000 is the base width
+            const zoomDisplay = document.getElementById('zoom-display');
+            if (zoomDisplay) {
+                zoomDisplay.textContent = `Zoom: ${zoomPercentage}%`;
+            }
+        }
+    }
+}
+
+function getPinchDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
 }
 
 export function rotateMapPoints(points, direction) {
@@ -144,10 +197,29 @@ function constrainViewBox() {
     viewBox.y = Math.max(boundingBox.y, Math.min(viewBox.y, maxY));
 }
 
-// Ensure the cursor is set to "grab" when not dragging
+// Add event listeners for touch gestures
 document.addEventListener("DOMContentLoaded", () => {
     const svgCanvas = document.getElementById('svgCanvas');
     if (svgCanvas) {
         svgCanvas.style.cursor = "grab";
+
+        svgCanvas.addEventListener("touchstart", event => {
+            if (event.touches.length === 1) {
+                handleDragStart(event);
+            } else if (event.touches.length === 2) {
+                handlePinchStart(event);
+            }
+        });
+
+        svgCanvas.addEventListener("touchmove", event => {
+            if (event.touches.length === 1) {
+                handleDragMove(event);
+            } else if (event.touches.length === 2) {
+                handlePinchMove(event);
+            }
+        });
+
+        svgCanvas.addEventListener("touchend", handleDragEnd);
+        svgCanvas.addEventListener("touchcancel", handleDragEnd);
     }
 });

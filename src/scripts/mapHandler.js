@@ -1,5 +1,38 @@
 const GLOBAL_SPEED_LIMIT = 50; // Default global speed limit in m/s
 
+let boundingBoxes = {}; // Store bounding boxes for name filters
+
+export function initializeBoundingBoxes(shapes) {
+    const nameFilters = ["Delta", "Zulu", "Bravo"]; // Add more filters as needed
+
+    nameFilters.forEach(nameFilter => {
+        const filteredShapes = Object.values(shapes).flat().filter(shape => {
+            const name = shape.Name || shape.MapElement?.Name || shape.Polygon?.Name || "Unnamed";
+            return name === nameFilter;
+        });
+
+        if (filteredShapes.length > 0) {
+            const allPoints = filteredShapes.flatMap(shape => shape.Points || shape.MapElement?.Points || []);
+            const xValues = allPoints.map(p => p.X);
+            const yValues = allPoints.map(p => p.Y);
+
+            const minX = Math.min(...xValues);
+            const maxX = Math.max(...xValues);
+            const minY = Math.min(...yValues);
+            const maxY = Math.max(...yValues);
+
+            boundingBoxes[nameFilter] = {
+                x: minX - 100,
+                y: minY - 100,
+                width: maxX - minX + 200,
+                height: maxY - minY + 200
+            };
+
+            console.log(`Bounding box for ${nameFilter}:`, boundingBoxes[nameFilter]);
+        }
+    });
+}
+
 export function breakdownJson(jsonData) {
     const shapes = {
         AOZ: [],
@@ -70,6 +103,51 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
 
     const now = new Date();
 
+    // If a name filter is applied, filter all points to ensure they are within the bounding box
+    let boundingBox = null;
+    if (nameFilter !== "None") {
+        const filteredShapes = Object.values(shapes).flat().filter(shape => {
+            const name = shape.Name || shape.MapElement?.Name || shape.Polygon?.Name || "Unnamed";
+            return name.toLowerCase().includes(nameFilter.toLowerCase());
+        });
+
+        if (filteredShapes.length > 0) {
+            const allPoints = filteredShapes.flatMap(shape => shape.Points || shape.MapElement?.Points || []);
+            if (allPoints.length > 0) {
+                const xValues = allPoints.map(p => p.X);
+                const yValues = allPoints.map(p => p.Y);
+
+                const minX = Math.min(...xValues);
+                const maxX = Math.max(...xValues);
+                const minY = Math.min(...yValues);
+                const maxY = Math.max(...yValues);
+
+                boundingBox = {
+                    x: minX,
+                    y: minY,
+                    width: maxX - minX,
+                    height: maxY - minY
+                };
+
+                const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute("x", boundingBox.x);
+                rect.setAttribute("y", boundingBox.y);
+                rect.setAttribute("width", boundingBox.width);
+                rect.setAttribute("height", boundingBox.height);
+                rect.setAttribute("fill", "none");
+                rect.setAttribute("stroke", "blue");
+                rect.setAttribute("stroke-width", "2");
+                rect.setAttribute("stroke-dasharray", "5,5"); // Dashed line for the bounding box
+                svgCanvas.appendChild(rect);
+                console.log(`Bounding box for '${nameFilter}' drawn:`, boundingBox);
+            }
+        } else {
+            console.warn(`No shapes found for name filter '${nameFilter}'.`);
+            return; // Exit early if no shapes match the name filter
+        }
+    }
+
+    // Plot shapes, filtering points based on the bounding box if it exists
     Object.keys(shapes).forEach(type => {
         if (!filters[type]) {
             console.log(`Filter for ${type} is off. Skipping.`); // Log skipped types
@@ -91,10 +169,25 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
             console.log(`Shape '${name}' SpeedLimit: ${speedLimitMps} m/s (${speedLimitKph} kph)`); // Log speed in both units
 
             // Extract points from the correct location
-            const points = shape.Points || shape.MapElement?.Points || shape.Polygon?.Points || [];
+            let points = shape.Points || shape.MapElement?.Points || shape.Polygon?.Points || [];
             if (points.length === 0) {
                 console.warn(`Shape '${name}' has no points. Skipping.`); // Log shapes with no points
                 return;
+            }
+
+            // Filter points based on the bounding box if it exists
+            if (boundingBox) {
+                points = points.filter(point =>
+                    point.X >= boundingBox.x &&
+                    point.X <= boundingBox.x + boundingBox.width &&
+                    point.Y >= boundingBox.y &&
+                    point.Y <= boundingBox.y + boundingBox.height
+                );
+
+                if (points.length === 0) {
+                    console.log(`Shape '${name}' has no points within the bounding box. Skipping.`);
+                    return;
+                }
             }
 
             console.log(`Shape '${name}' points:`, points); // Log points data
@@ -115,7 +208,7 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
                 const shapeDate = utcTime ? new Date(utcTime) : null;
                 const timeDifference = shapeDate ? now - shapeDate : null;
 
-                if (timeDifference && timeDifference <= 48 * 60 * 60 * 1000) {
+                if (timeDifference && timeDifference <= 24 * 60 * 60 * 1000) {
                     fillColor = "rgba(0, 255, 0, 0.5)"; // Green transparent fill for recent UTC
                 }
             }
