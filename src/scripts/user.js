@@ -237,7 +237,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }, { passive: false });
 
-    // Ensure tooltips are positioned correctly for touch devices
+    // Ensure tooltips are positioned correctly for all interaction types
+    document.addEventListener("mousemove", event => {
+        const tooltip = document.getElementById("tooltip");
+        if (tooltip.style.display === "block") {
+            tooltip.style.left = `${event.pageX + 10}px`;
+            tooltip.style.top = `${event.pageY + 10}px`;
+        }
+    });
+
     document.addEventListener("click", event => {
         const tooltip = document.getElementById("tooltip");
         if (tooltip.style.display === "block") {

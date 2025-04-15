@@ -73,7 +73,7 @@ export function highlightPSFocus(svgCanvas, shapes, highlightPSFocus) {
                 const name = shape.Name || shape.MapElement?.Name || "Unnamed";
                 const speedLimitKph = Math.round(speedLimit * 3.6); // Convert m/s to kph
 
-                // Add hover or click functionality for tooltip
+                // Function to show the tooltip
                 const showTooltip = (event) => {
                     const tooltip = document.getElementById("tooltip");
                     tooltip.innerHTML = `
@@ -86,19 +86,21 @@ export function highlightPSFocus(svgCanvas, shapes, highlightPSFocus) {
                     tooltip.style.top = `${event.pageY + 10}px`;
                 };
 
+                // Function to hide the tooltip
                 const hideTooltip = () => {
                     const tooltip = document.getElementById("tooltip");
                     tooltip.style.display = "none";
                 };
 
+                // Add event listeners for hover, click, and touch
                 if (isTouchDevice) {
-                    polygon.addEventListener("click", (event) => {
-                        showTooltip(event);
+                    polygon.addEventListener("touchstart", (event) => {
+                        showTooltip(event.touches[0]);
                         event.stopPropagation(); // Prevent hiding the tooltip immediately
                     });
 
-                    // Hide tooltip when clicking outside the shape
-                    document.addEventListener("click", (event) => {
+                    // Hide tooltip when touching outside the shape
+                    document.addEventListener("touchstart", (event) => {
                         if (!polygon.contains(event.target)) {
                             hideTooltip();
                         }
@@ -106,6 +108,7 @@ export function highlightPSFocus(svgCanvas, shapes, highlightPSFocus) {
                 } else {
                     polygon.addEventListener("mouseenter", showTooltip);
                     polygon.addEventListener("mouseleave", hideTooltip);
+                    polygon.addEventListener("click", showTooltip);
                 }
 
                 svgCanvas.appendChild(polygon);
