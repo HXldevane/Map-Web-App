@@ -10,6 +10,7 @@
     "vite": "^4.0.0"
   },
   "dependencies": {
-    "dubins-js": "^0.0.7"
+    "dubins-js": "^0.0.7",
+    "jspdf": "^3.0.1"
   }
 }

@@ -1,6 +1,6 @@
 const GLOBAL_SPEED_LIMIT = 50; // Default global speed limit in m/s
 
-let boundingBoxes = {}; // Store bounding boxes for name filters
+export let boundingBoxes = {}; // Export boundingBoxes so it can be imported elsewhere
 
 export function initializeBoundingBoxes(shapes) {
     const nameFilters = ["Delta", "Zulu", "Bravo"]; // Add more filters as needed
@@ -31,6 +31,37 @@ export function initializeBoundingBoxes(shapes) {
             console.log(`Bounding box for ${nameFilter}:`, boundingBoxes[nameFilter]);
         }
     });
+}
+
+export function calculateAozBoundingBox(shapes) {
+    if (!shapes.AOZ || shapes.AOZ.length === 0) {
+        console.warn("No AOZ shapes found.");
+        return null;
+    }
+
+    const allPoints = shapes.AOZ.flatMap(shape => shape.Points || shape.MapElement?.Points || []);
+    if (allPoints.length === 0) {
+        console.warn("No points found in AOZ shapes.");
+        return null;
+    }
+
+    const xValues = allPoints.map(p => p.X);
+    const yValues = allPoints.map(p => p.Y);
+
+    const minX = Math.min(...xValues);
+    const maxX = Math.max(...xValues);
+    const minY = Math.min(...yValues);
+    const maxY = Math.max(...yValues);
+
+    const boundingBox = {
+        x: minX - 100,
+        y: minY - 100,
+        width: maxX - minX + 200,
+        height: maxY - minY + 200
+    };
+
+    console.log("Calculated AOZ bounding box:", boundingBox);
+    return boundingBox;
 }
 
 export function breakdownJson(jsonData) {
@@ -92,9 +123,9 @@ export function plotShapes(svgCanvas, shapes, filters, nameFilter, showSpeedLimi
 
     const colors = {
         AOZ: "none",
-        Road: "grey",
-        Reference: "rgba(255, 255, 0, 0.5)", // Yellow transparent fill for reference shapes
-        Obstacle: "none",
+        Road: "LightSlateGray",
+        Reference: "rgba(255, 255, 0, 0.33)", // Yellow transparent fill for reference shapes
+        Obstacle: "rgba(123, 136, 153, 0.2)",
         Station: "none",
         Load: "rgba(200, 200, 200, 0.5)", // Light grey fill for load areas
         Dump: "rgba(200, 200, 200, 0.5)", // Light grey fill for dump areas

@@ -11,6 +11,8 @@ let dragStart = { x: 0, y: 0 };
 let initialPinchDistance = null;
 let initialViewBox = { ...viewBox };
 
+let tooltipsEnabled = false; // Disable tooltips by default
+
 export function initializeBoundingBox(points) {
     const xValues = points.map(p => p.X);
     const yValues = points.map(p => p.Y);
@@ -56,9 +58,12 @@ export function handleZoom(event) {
     svgCanvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
 
     const zoomPercentage = Math.round((1000 / viewBox.width) * 100);
-    const zoomDisplay = document.getElementById('zoom-display');
+    console.log(`Zoom level: ${zoomPercentage}%`);
+
+    const zoomDisplay = document.getElementById('zoom-container');
     if (zoomDisplay) {
         zoomDisplay.textContent = `Zoom: ${zoomPercentage}%`;
+        
     }
 }
 
@@ -131,11 +136,7 @@ export function handlePinchMove(event) {
                 svgCanvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
             }
 
-            const zoomPercentage = Math.round((1000 / viewBox.width) * 100);
-            const zoomDisplay = document.getElementById('zoom-display');
-            if (zoomDisplay) {
-                zoomDisplay.textContent = `Zoom: ${zoomPercentage}%`;
-            }
+            
         }
         event.preventDefault(); // Prevent default pinch-to-zoom behavior
     }
@@ -239,7 +240,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Ensure tooltips are positioned correctly for all interaction types
     document.addEventListener("mousemove", event => {
+        if (!tooltipsEnabled) return; // Disable tooltips if no map file is loaded
+
         const tooltip = document.getElementById("tooltip");
+        if (!tooltip) {
+            console.warn("Tooltip element not found.");
+            return;
+        }
         if (tooltip.style.display === "block") {
             tooltip.style.left = `${event.pageX + 10}px`;
             tooltip.style.top = `${event.pageY + 10}px`;
@@ -247,6 +254,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.addEventListener("click", event => {
+        if (!tooltipsEnabled) return; // Disable tooltips if no map file is loaded
+
         const tooltip = document.getElementById("tooltip");
         if (tooltip.style.display === "block") {
             tooltip.style.left = `${event.pageX + 10}px`;
@@ -254,3 +263,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
+// Enable tooltips when a map file is loaded
+export function enableTooltips() {
+    tooltipsEnabled = true;
+}
+
+// Disable tooltips when no map file is loaded
+export function disableTooltips() {
+    tooltipsEnabled = false;
+}

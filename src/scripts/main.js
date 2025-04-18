@@ -1,12 +1,22 @@
-import { handleZoom, handleDragStart, handleDragMove, handleDragEnd, initializeBoundingBox, rotateMap } from './user.js';
-import { breakdownJson, plotShapes, initializeBoundingBoxes } from './mapHandler.js';
+import { handleZoom, handleDragStart, handleDragMove, handleDragEnd, initializeBoundingBox, rotateMap, enableTooltips, disableTooltips } from './user.js';
+import { breakdownJson, plotShapes, initializeBoundingBoxes, calculateAozBoundingBox } from './mapHandler.js';
 import { highlightNarrowRoads, highlightOldReferences, highlightPSFocus } from './analysis.js';
+import { exportBoundingBoxToPDF } from './export.js';
+
+// Ensure boundingBoxes is imported or defined
+import { boundingBoxes } from './mapHandler.js';
 
 let isDragging = false; // Declare isDragging to track drag state
 let dragStart = { x: 0, y: 0 }; // Declare dragStart to track drag start position
 let currentShapes = null;
+let tooltipsEnabled = false; // Disable tooltips by default
+
+// Ensure viewBox is defined globally
+let viewBox = { x: 0, y: 0, width: 1000, height: 1000 }; // Default viewBox
 
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("viewBox initialized:", viewBox);
+
     // Initialize and check all required elements early
     const narrowRoadsToggle = document.getElementById('highlight-narrow-roads-toggle');
     const fileUpload1 = document.getElementById('file-upload-1');
@@ -24,6 +34,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const nameFilter = document.getElementById('name-filter');
     const svgCanvas = document.getElementById('svgCanvas');
     const recentUtcToggle = document.getElementById('highlight-recent-utc-toggle');
+    const exportBtn = document.getElementById("export-btn");
+
+    const zoomDisplay = document.getElementById('zoom-container');
+    if (zoomDisplay) {
+        zoomDisplay.textContent = 'Zoom: 100%'; // Ensure initial text is set
+    }
+
+    const zoomContainer = document.getElementById('zoom-container');
 
     // Add event listeners only if elements exist
     if (narrowRoadsToggle) {
@@ -50,7 +68,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const file = event.target.files[0];
             if (!file) {
                 console.warn("No file selected.");
+                disableTooltips(); // Disable tooltips if no file is selected
                 return;
+            }
+
+            if (file && zoomContainer) {
+                zoomContainer.style.display = 'block'; // Show the zoom container
             }
 
             const reader = new FileReader();
@@ -59,11 +82,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     const jsonData = JSON.parse(reader.result);
                     if (!jsonData || !jsonData.MapShapes || !Array.isArray(jsonData.MapShapes)) {
                         console.error("Invalid JSON structure: 'MapShapes' is missing or not an array.");
+                        disableTooltips(); // Disable tooltips if JSON is invalid
                         return;
                     }
 
                     currentShapes = breakdownJson(jsonData);
                     initializeBoundingBoxes(currentShapes); // Initialize bounding boxes for name filters
+                    enableTooltips(); // Enable tooltips when a valid map file is loaded
                     const allPoints = jsonData.MapShapes.flatMap(shape => shape.Points || shape.MapElement?.Points || []);
                     if (allPoints.length === 0) {
                         console.error("No points found in the uploaded JSON.");
@@ -75,6 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     updatePlot();
                 } catch (error) {
                     console.error("Invalid JSON file:", error);
+                    disableTooltips(); // Disable tooltips if JSON parsing fails
                 }
             };
             reader.readAsText(file);
@@ -88,6 +114,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (fileUpload1) fileUpload1.value = '';
             if (svgCanvas) svgCanvas.innerHTML = '';
             currentShapes = null;
+            disableTooltips(); // Disable tooltips when the file is cleared
+            if (zoomContainer) {
+                zoomContainer.style.display = 'none'; // Hide the zoom container
+            }
         });
     }
 
@@ -182,6 +212,27 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Add event listeners for shape filters
+    const shapeFilters = [
+        'filter-aoz',
+        'filter-road',
+        'filter-reference',
+        'filter-obstacle',
+        'filter-station',
+        'filter-drivable',
+        'filter-load',
+        'filter-dump'
+    ];
+
+    shapeFilters.forEach(filterId => {
+        const filterElement = document.getElementById(filterId);
+        if (filterElement) {
+            filterElement.addEventListener('change', updatePlot); // Trigger updatePlot on toggle
+        } else {
+            console.warn(`Element with ID '${filterId}' not found.`);
+        }
+    });
+
     if (svgCanvas) {
         svgCanvas.addEventListener('mousedown', determineInteraction);
         svgCanvas.addEventListener('wheel', determineInteraction);
@@ -190,6 +241,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener('mousemove', determineInteraction);
     document.addEventListener('mouseup', determineInteraction);
+
+    if (exportBtn) {
+        exportBtn.addEventListener("click", () => {
+            if (!currentShapes) {
+                console.warn("No shapes available for export.");
+                return;
+            }
+
+            const nameFilter = getNameFilter();
+            const boundingBox = nameFilter === "None"
+                ? calculateAozBoundingBox(currentShapes)
+                : boundingBoxes[nameFilter];
+
+            if (!boundingBox) {
+                console.warn("No bounding box available for export.");
+                return;
+            }
+
+            exportBoundingBoxToPDF(svgCanvas, boundingBox, nameFilter);
+        });
+    }
 
     function updatePlot() {
         if (!currentShapes) {
@@ -213,6 +285,21 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!svgCanvas) {
             console.error("SVG element with ID 'svgCanvas' not found.");
             return;
+        }
+
+        // Reset shapes to their normal color if no highlights are toggled
+        if (!highlightOldReferences && !highlightPSFocus && !highlightRecentUtc) {
+            console.log("No highlights toggled. Resetting shapes to normal color.");
+            plotShapes(svgCanvas, currentShapes, filters, nameFilter, showSpeedLimits, false, false, false);
+            return;
+        }
+
+        // Calculate AOZ bounding box if no name filter is selected
+        if (nameFilter === "None") {
+            const aozBoundingBox = calculateAozBoundingBox(currentShapes);
+            if (aozBoundingBox) {
+                console.log("AOZ bounding box calculated but not plotted:", aozBoundingBox);
+            }
         }
 
         console.log("Plotting shapes on canvas...");
@@ -242,7 +329,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     document.addEventListener("mousemove", event => {
+        if (!tooltipsEnabled) return; // Disable tooltips if no file is uploaded
+
         const tooltip = document.getElementById("tooltip");
+        if (!tooltip) {
+            console.warn("Tooltip element not found.");
+            return;
+        }
         if (tooltip.style.display === "block") {
             tooltip.style.left = event.pageX + 10 + "px";
             tooltip.style.top = event.pageY + 10 + "px";
@@ -251,6 +344,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function determineInteraction(event) {
         console.log(`Event detected: ${event.type}`);
+
+        // Ensure viewBox is defined before proceeding
+        if (!viewBox) {
+            console.warn("viewBox is not defined. Skipping interaction.");
+            return;
+        }
+
         if (event.type === "mousedown") {
             isDragging = false;
             dragStart.x = event.clientX;
@@ -270,28 +370,27 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if (event.type === "mouseup") {
             if (isDragging) {
                 handleDragEnd();
-            } else {
-                console.log("Click detected");
             }
             isDragging = false;
         } else if (event.type === "wheel") {
-            console.log("Scroll detected");
             handleZoom(event);
+            const zoomPercentage = Math.round((1000 / viewBox.width) * 100);
+            console.log(`Current scale: ${event.deltaY > 0 ? "Zooming out" : "Zooming in"} (${zoomPercentage}%)`);
         }
     }
-});
 
-function translateMouseToSvgCoordinates(event) {
-    if (!svgCanvas) {
-        console.error("SVG element with ID 'svgCanvas' not found.");
-        return null;
+    function translateMouseToSvgCoordinates(event) {
+        if (!svgCanvas) {
+            console.error("SVG element with ID 'svgCanvas' not found.");
+            return null;
+        }
+
+        const pt = svgCanvas.createSVGPoint();
+        pt.x = event.clientX;
+        pt.y = event.clientY;
+
+        const svgPoint = pt.matrixTransform(svgCanvas.getScreenCTM().inverse());
+        console.log("Translated mouse coordinates:", { x: svgPoint.x, y: svgPoint.y });
+        return { x: svgPoint.x, y: svgPoint.y };
     }
-
-    const pt = svgCanvas.createSVGPoint();
-    pt.x = event.clientX;
-    pt.y = event.clientY;
-
-    const svgPoint = pt.matrixTransform(svgCanvas.getScreenCTM().inverse());
-    console.log("Translated mouse coordinates:", { x: svgPoint.x, y: svgPoint.y });
-    return { x: svgPoint.x, y: svgPoint.y };
-}
+});
